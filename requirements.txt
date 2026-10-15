@@ -1,0 +1,7 @@
+ultralytics
+fastapi
+uvicorn
+python-multipart
+imageio-ffmpeg
+lap
+boto3

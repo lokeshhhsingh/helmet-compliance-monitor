@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helmet Compliance Monitor</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 960px; margin: 30px auto; padding: 0 16px; color: #222; }
+    h1 { margin-bottom: 4px; }
+    .sub { color: #666; margin-top: 0; }
+    .row { display: flex; gap: 12px; align-items: center; margin: 20px 0; flex-wrap: wrap; }
+    button { padding: 10px 20px; font-size: 16px; border: 0; border-radius: 6px; background: #1a73e8; color: #fff; cursor: pointer; }
+    button:disabled { background: #9bb8e8; cursor: default; }
+    .bar { height: 14px; background: #e3e3e3; border-radius: 7px; overflow: hidden; display: none; }
+    .bar div { height: 100%; width: 0; background: #1a73e8; transition: width .3s; }
+    #status { margin: 8px 0; color: #444; }
+    .cards { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+    .card { flex: 1; min-width: 130px; padding: 14px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+    .card b { display: block; font-size: 28px; }
+    .card.bad { border-color: #d93025; color: #d93025; }
+    video { width: 100%; border-radius: 8px; background: #000; display: none; }
+    .evidence { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .evidence figure { margin: 0; width: 300px; }
+    .evidence img { width: 100%; border-radius: 6px; border: 2px solid #d93025; }
+    figcaption { font-size: 14px; color: #444; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Helmet Compliance Monitor</h1>
+  <p class="sub">Upload traffic footage. The system tracks each rider and flags those without a helmet.</p>
+
+  <div class="row">
+    <input type="file" id="file" accept="video/*">
+    <button id="go">Analyze video</button>
+  </div>
+  <div class="bar" id="bar"><div id="fill"></div></div>
+  <div id="status"></div>
+
+  <div class="cards" id="cards"></div>
+  <video id="video" controls></video>
+  <h3 id="evTitle" style="display:none">Violation evidence</h3>
+  <div class="evidence" id="evidence"></div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function card(label, value, bad) {
+      return `<div class="card ${bad ? "bad" : ""}"><b>${value}</b>${label}</div>`;
+    }
+
+    function show(s) {
+      $("cards").innerHTML = card("Riders tracked", s.riders_tracked) + card("With helmet", s.helmet)
+        + card("Without helmet", s.no_helmet, s.no_helmet > 0) + card("Violations logged", s.violations, s.violations > 0);
+      $("video").src = s.output_video;
+      $("video").style.display = "block";
+      if (s.events.length) {
+        $("evTitle").style.display = "block";
+        $("evidence").innerHTML = s.events.map(e =>
+          `<figure><img src="${e.snapshot}"><figcaption>Rider #${e.rider_id} at ${e.time_s}s</figcaption></figure>`).join("");
+      }
+    }
+
+    async function poll(id) {
+      const job = await (await fetch("/jobs/" + id)).json();
+      if (job.status === "done") {
+        $("status").textContent = "Done.";
+        $("bar").style.display = "none";
+        $("go").disabled = false;
+        show(job.summary);
+      } else if (job.status === "error") {
+        $("status").textContent = "Error: " + job.error;
+        $("bar").style.display = "none";
+        $("go").disabled = false;
+      } else {
+        $("fill").style.width = job.progress + "%";
+        $("status").textContent = job.status === "encoding" ? "Preparing video..." :
+          job.status === "queued" ? "Waiting in queue..." : "Analyzing... " + job.progress + "%";
+        setTimeout(() => poll(id), 1000);
+      }
+    }
+
+    $("go").onclick = async () => {
+      const f = $("file").files[0];
+      if (!f) { alert("Choose a video first."); return; }
+      $("go").disabled = true;
+      $("cards").innerHTML = ""; $("evidence").innerHTML = "";
+      $("evTitle").style.display = "none"; $("video").style.display = "none";
+      $("bar").style.display = "block"; $("fill").style.width = "0%";
+      $("status").textContent = "Uploading...";
+      const form = new FormData();
+      form.append("file", f);
+      const res = await fetch("/jobs", { method: "POST", body: form });
+      const { job_id } = await res.json();
+      poll(job_id);
+    };
+  </script>
+</body>
+</html>

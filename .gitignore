@@ -1,0 +1,8 @@
+helmet-env/
+jobs/
+evidence/
+__pycache__/
+*.mp4
+*.jpg
+summary.txt
+yolov8n.pt
