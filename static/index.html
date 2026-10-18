@@ -15,14 +15,16 @@
     .bar div { height: 100%; width: 0; background: #1a73e8; transition: width .3s; }
     #status { margin: 8px 0; color: #444; }
     .cards { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
-    .card { flex: 1; min-width: 130px; padding: 14px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+    .card { flex: 1; min-width: 120px; padding: 14px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
     .card b { display: block; font-size: 28px; }
     .card.bad { border-color: #d93025; color: #d93025; }
+    .card.warn { border-color: #e8710a; color: #e8710a; }
     video { width: 100%; border-radius: 8px; background: #000; display: none; }
     .evidence { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
     .evidence figure { margin: 0; width: 300px; }
     .evidence img { width: 100%; border-radius: 6px; border: 2px solid #d93025; }
     figcaption { font-size: 14px; color: #444; margin-top: 4px; }
+    .note { font-size: 13px; color: #666; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -37,6 +39,7 @@
   <div id="status"></div>
 
   <div class="cards" id="cards"></div>
+  <div class="note" id="note"></div>
   <video id="video" controls></video>
   <h3 id="evTitle" style="display:none">Violation evidence</h3>
   <div class="evidence" id="evidence"></div>
@@ -44,19 +47,23 @@
   <script>
     const $ = id => document.getElementById(id);
 
-    function card(label, value, bad) {
-      return `<div class="card ${bad ? "bad" : ""}"><b>${value}</b>${label}</div>`;
+    function card(label, value, cls) {
+      return `<div class="card ${cls || ""}"><b>${value}</b>${label}</div>`;
     }
 
     function show(s) {
-      $("cards").innerHTML = card("Riders tracked", s.riders_tracked) + card("With helmet", s.helmet)
-        + card("Without helmet", s.no_helmet, s.no_helmet > 0) + card("Violations logged", s.violations, s.violations > 0);
+      $("cards").innerHTML = card("Riders tracked", s.riders_tracked)
+        + card("With helmet", s.helmet)
+        + card("Without helmet", s.no_helmet, s.no_helmet > 0 ? "bad" : "")
+        + card("Needs review", s.uncertain, s.uncertain > 0 ? "warn" : "")
+        + card("Violations logged", s.violations, s.violations > 0 ? "bad" : "");
+      $("note").textContent = "A rider is flagged only after a second, enlarged look agrees. Unsure cases are marked for review.";
       $("video").src = s.output_video;
       $("video").style.display = "block";
       if (s.events.length) {
         $("evTitle").style.display = "block";
         $("evidence").innerHTML = s.events.map(e =>
-          `<figure><img src="${e.snapshot}"><figcaption>Rider #${e.rider_id} at ${e.time_s}s</figcaption></figure>`).join("");
+          `<figure><img src="${e.snapshot}"><figcaption>Rider #${e.rider_id} at ${e.time_s}s (${e.second_look})</figcaption></figure>`).join("");
       }
     }
 
@@ -83,7 +90,7 @@
       const f = $("file").files[0];
       if (!f) { alert("Choose a video first."); return; }
       $("go").disabled = true;
-      $("cards").innerHTML = ""; $("evidence").innerHTML = "";
+      $("cards").innerHTML = ""; $("evidence").innerHTML = ""; $("note").textContent = "";
       $("evTitle").style.display = "none"; $("video").style.display = "none";
       $("bar").style.display = "block"; $("fill").style.width = "0%";
       $("status").textContent = "Uploading...";
