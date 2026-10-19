@@ -1,9 +1,11 @@
 import os
+import time
 import uuid
 import shutil
 import subprocess
 import threading
 
+import boto3
 import cv2
 import numpy as np
 import imageio_ffmpeg
@@ -19,6 +21,12 @@ os.makedirs("jobs", exist_ok=True)
 JOBS = {}                       # job id -> status dict
 JOB_LOCK = threading.Lock()     # models are shared, so process one video at a time
 
+S3_BUCKET = os.environ.get("S3_BUCKET")
+SNS_TOPIC = os.environ.get("SNS_TOPIC_ARN")
+DDB_TABLE = os.environ.get("DDB_TABLE", "helmet-violations")
+REGION = os.environ.get("AWS_DEFAULT_REGION", "ap-south-1")
+BASE_URL = os.environ.get("PUBLIC_BASE_URL", "")
+
 
 def to_h264(src, dst):
     # browsers can't play OpenCV's mp4v output, so re-encode to H.264
@@ -26,6 +34,69 @@ def to_h264(src, dst):
     r = subprocess.run([exe, "-y", "-i", src, "-vcodec", "libx264", "-pix_fmt", "yuv420p",
                         "-preset", "veryfast", "-crf", "23", dst], capture_output=True)
     return r.returncode == 0
+
+
+def alert_loop(job_id, summary):
+    # what the vision result triggers:
+    #   confirmed no-helmet -> evidence photo to S3, record in DynamoDB, email through SNS
+    #   unsure              -> record in DynamoDB marked needs_review, no email
+    if not (S3_BUCKET and SNS_TOPIC):
+        return {"enabled": False}
+    out = {"enabled": True, "sent": 0, "recorded_for_review": 0, "errors": []}
+    try:
+        s3 = boto3.client("s3", region_name=REGION)
+        table = boto3.resource("dynamodb", region_name=REGION).Table(DDB_TABLE)
+        sns = boto3.client("sns", region_name=REGION)
+    except Exception as ex:
+        out["errors"].append(str(ex))
+        print("ALERT LOOP setup error:", ex, flush=True)
+        return out
+
+    for e in summary["events"]:
+        try:
+            name = os.path.basename(e["snapshot"])
+            key = f"evidence/{job_id}/{name}"
+            s3.upload_file(e["snapshot"], S3_BUCKET, key)
+            table.put_item(Item={
+                "violation_id": f"{job_id}-r{e['rider_id']}",
+                "job_id": job_id,
+                "rider_id": e["rider_id"],
+                "status": "confirmed",
+                "time_s": str(e["time_s"]),
+                "second_look": e["second_look"],
+                "head_brightness": str(e["head_brightness"]),
+                "s3_key": key,
+                "created": int(time.time()),
+            })
+            link = f"{BASE_URL}/files/{job_id}/evidence/{name}"
+            sns.publish(
+                TopicArn=SNS_TOPIC,
+                Subject="Helmet violation confirmed",
+                Message=(f"Rider #{e['rider_id']} without a helmet at {e['time_s']} s.\n"
+                         f"Second look: {e['second_look']}.\n"
+                         f"Evidence photo: {link}\n"
+                         f"Stored in S3: s3://{S3_BUCKET}/{key}"))
+            out["sent"] += 1
+        except Exception as ex:
+            out["errors"].append(f"rider {e['rider_id']}: {ex}")
+            print("ALERT LOOP error:", ex, flush=True)
+
+    for r in summary.get("review", []):
+        try:
+            table.put_item(Item={
+                "violation_id": f"{job_id}-r{r['rider_id']}",
+                "job_id": job_id,
+                "rider_id": r["rider_id"],
+                "status": "needs_review",
+                "reason": r["reason"],
+                "head_brightness": str(r["head_brightness"]),
+                "created": int(time.time()),
+            })
+            out["recorded_for_review"] += 1
+        except Exception as ex:
+            out["errors"].append(f"review rider {r['rider_id']}: {ex}")
+            print("ALERT LOOP error:", ex, flush=True)
+    return out
 
 
 def run_job(job_id, input_path):
@@ -48,6 +119,9 @@ def run_job(job_id, input_path):
             os.remove(raw)
         else:
             os.replace(raw, final)
+
+        summary["alerts"] = alert_loop(job_id, summary)     # uses local snapshot paths
+
         summary["output_video"] = f"/files/{job_id}/annotated.mp4"
         for e in summary["events"]:
             e["snapshot"] = f"/files/{job_id}/evidence/" + os.path.basename(e["snapshot"])
