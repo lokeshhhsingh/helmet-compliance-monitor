@@ -95,13 +95,21 @@ The app runs as a systemd service (`helmet.service`) that starts
 /home/ubuntu/helmet-compliance-monitor/venv/bin/uvicorn app:app --host 0.0.0.0 --port 80
 ```
 
-and restarts automatically if it stops. To update after pushing changes:
+and restarts automatically if it stops. The AWS settings from the table above are kept in a separate override file, `/etc/systemd/system/helmet.service.d/aws.conf`, as `Environment=` lines, so they are not stored in the repository.
+
+To update after pushing changes:
 
 ```bash
 cd ~/helmet-compliance-monitor && git pull && sudo systemctl restart helmet
 ```
 
-If the instance is stopped and started again, its public IP changes unless an Elastic IP is attached, so update `PUBLIC_BASE_URL` to keep the evidence links in emails working.
+If the instance is stopped and started again, its public IP changes unless an Elastic IP is attached, so update `PUBLIC_BASE_URL` in `aws.conf` to keep the evidence links in emails working:
+
+```bash
+sudo nano /etc/systemd/system/helmet.service.d/aws.conf
+sudo systemctl daemon-reload
+sudo systemctl restart helmet
+```
 
 ## Repository layout
 
