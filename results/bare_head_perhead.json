@@ -1,0 +1,32 @@
+﻿{
+  "frames": 511,
+  "duration_s": 20.4,
+  "bikes_tracked": 1,
+  "riders_tracked": 2,
+  "helmet": 0,
+  "no_helmet": 2,
+  "uncertain": 0,
+  "review": [],
+  "violations": 2,
+  "events": [
+    {
+      "rider_id": "1A",
+      "bike_id": 1,
+      "frame": 24,
+      "time_s": 0.96,
+      "snapshot": "evidence\\violation_1A_f24.jpg",
+      "second_look": "5/5 re-checks agreed",
+      "head_brightness": 131.4
+    },
+    {
+      "rider_id": "1B",
+      "bike_id": 1,
+      "frame": 90,
+      "time_s": 3.6,
+      "snapshot": "evidence\\violation_1B_f90.jpg",
+      "second_look": "3/3 re-checks agreed",
+      "head_brightness": 168.4
+    }
+  ],
+  "output_video": "annotated.mp4"
+}
