@@ -123,8 +123,23 @@ results/           saved JSON results from test clips
 requirements.txt   pinned dependencies
 ```
 
+## Test footage
+
+All test clips are free stock videos downloaded from Pexels and used under the
+Pexels License. The people shown are members of the public or actors, not real offenders.
+This prototype is a demonstration, and it flags footage for human review, it does not
+issue penalties.
+
+| Clip | Source | Creator | Length |
+|------|--------|---------|--------|
+| Bare-headed pair (driver + passenger) | https://www.pexels.com/video/a-couple-riding-a-motorbike-5207050/ | cottonbro studio | 20.4 s |
+| Night rider | https://www.pexels.com/video/nighttime-motorcycle-ride-under-city-overpass-31909050/ | Mario Spencer | 11.8 s |
+| Close-up, bike parked | https://www.pexels.com/video/a-man-riding-a-motorbike-8551058/ | Kindel Media | 9.7 s |
+
 ## Limitations
 
+- **Close-ups.** The system expects the whole motorcycle to stay visible. In a close-up of a parked bike with most of it out of frame, the motorcycle was detected only in short flashes, so no rider was formed and a bare-headed person was not flagged.
+- **Hidden passengers.** A small child seated in front of the rider, partly hidden by the rider's arm, was not detected as a separate person. The trained helmet model rarely finds heads that small or occluded, so a possible missing helmet went unflagged. Retraining with such examples is the main planned improvement.
 - Alerts are sent when a clip finishes processing, not at the instant a violation is detected. The pipeline runs at about 2.8 times real time on a CPU instance, so live camera streams would need a GPU or a faster instance.
 - Evidence links go through an open `/files` route over plain HTTP, and the photos show identifiable faces. This is acceptable for a demo with stock footage. A real deployment would need HTTPS, expiring links and face blurring.
 - A confirmation can pass on a thin margin (for example 2 of 3 re-checks agreeing), and the exact frame where a violation is confirmed can vary slightly between runs and machines.
