@@ -6,3 +6,5 @@ __pycache__/
 *.jpg
 summary.txt
 yolov8n.pt
+
+runs/
