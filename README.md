@@ -136,10 +136,29 @@ issue penalties.
 | Night rider | https://www.pexels.com/video/nighttime-motorcycle-ride-under-city-overpass-31909050/ | Mario Spencer | 11.8 s |
 | Close-up, bike parked | https://www.pexels.com/video/a-man-riding-a-motorbike-8551058/ | Kindel Media | 9.7 s |
 
+## Evaluation
+
+The system was run on 8 short stock clips. The true answer for each clip was written down by hand (by the author) before or alongside running it. Eight clips can show how the system behaves, but they are far too few to measure accuracy.
+
+| Clip | Truth | System | Result |
+|------|-------|--------|--------|
+| Bare-headed pair | 2 riders, both without helmet | 2 riders, 2 violations | correct |
+| Night rider | 1 rider, helmet | 1 rider, no violation | correct |
+| Solo rider (62 s) | 1 rider, no helmet, alone throughout | 1 rider, 1 violation | correct |
+| Bearded man, front view | 1 rider, no helmet | 1 rider, 1 violation | correct |
+| Racing bikes | 3 riders, all helmets | 7 riders, 0 violations | verdicts right, rider count too high |
+| Scooter group | about 18 people, helmets (one rider unclear) | 18 riders, 1 violation, 2 sent to review | count about right, 1 flag unverified (see Limitations) |
+| Close-up, parked bike | 1 rider, no helmet | 0 riders | **miss** |
+| Scooter with child | rider with helmet, child in front (apparently no helmet) | rider found, child not found | **child missed** |
+
+Summary: 5 people were clearly bare-headed. The system flagged 4 of them and missed 1 (the close-up). It also did not detect a child who appeared to have no helmet. In total it raised 1 flag that we could not confirm. On 720p clips it ran at about 2.8 times real time on the CPU server (20.4 s clip in 57.5 s, 62 s clip in 2 min 51 s).
+
 ## Limitations
 
 - **Close-ups.** The system expects the whole motorcycle to stay visible. In a close-up of a parked bike with most of it out of frame, the motorcycle was detected only in short flashes, so no rider was formed and a bare-headed person was not flagged.
 - **Hidden passengers.** A small child seated in front of the rider, partly hidden by the rider's arm, was not detected as a separate person. The trained helmet model rarely finds heads that small or occluded, so a possible missing helmet went unflagged. Retraining with such examples is the main planned improvement.
+- **Fast racing footage.** In a clip of racing bikes leaning through corners, the system reported 7 riders for 3 real ones, and one distant bike was not detected at all. All of them were judged as wearing helmets, so no false alarm resulted, but rider counts are unreliable when tracking breaks, and a duplicate rider judged as having no helmet could in principle produce a false violation.
+- **Dense groups and small, partly hidden heads.** In a group of about 18 people on closely riding scooters, one small, partly hidden head was confirmed as "no helmet" after the second look. It was reported as Rider #3B, but in the picture it sits next to a neighbouring scooter and may belong to that bike, so heads can be assigned to the wrong bike in dense groups. The author could not tell by eye whether that rider wears a helmet, so the flag is unverified: it may be right or wrong. The second look enlarges the same small image, so it adds little for tiny heads. Sending very small or uncertain heads to human review instead of confirming them is a planned improvement.
 - Alerts are sent when a clip finishes processing, not at the instant a violation is detected. The pipeline runs at about 2.8 times real time on a CPU instance, so live camera streams would need a GPU or a faster instance.
 - Evidence links go through an open `/files` route over plain HTTP, and the photos show identifiable faces. This is acceptable for a demo with stock footage. A real deployment would need HTTPS, expiring links and face blurring.
 - A confirmation can pass on a thin margin (for example 2 of 3 re-checks agreeing), and the exact frame where a violation is confirmed can vary slightly between runs and machines.
