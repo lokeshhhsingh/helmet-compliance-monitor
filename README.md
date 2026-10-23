@@ -21,7 +21,18 @@ Built for the OpenCV AI Competition 2026.
 
 Result statuses per head: `helmet`, `no-helmet` (confirmed), `uncertain` (leans no-helmet but not confirmed, goes to review) and `checking`.
 
+## Where OpenCV 5 is used
+
+The detection models (YOLOv8) run on PyTorch through Ultralytics, not through OpenCV's DNN module. OpenCV 5.0.0.93 does the video and image processing around them:
+
+- **Video input and output.** `cv2.VideoCapture` reads the frames and the clip's frame rate, size and frame count. `cv2.VideoWriter` writes the annotated mp4.
+- **Image preparation.** Frames are resized to a working size with `cv2.resize`. For the second look, stored head crops are enlarged 2x with bicubic interpolation (`cv2.INTER_CUBIC`).
+- **Low-light handling.** Each head crop's brightness is measured as the mean of its grayscale values (0 to 255). Crops darker than 90 are converted to LAB colour, their lightness channel is contrast-enhanced with CLAHE (`cv2.createCLAHE`, clip limit 3.0, 4x4 tiles) and they are converted back, both when a head is first judged and again in the second look. Heads darker than 45 are considered too dark to judge: they are never confirmed automatically and go to human review.
+- **Evidence.** `cv2.rectangle` and `cv2.putText` draw the bike and head boxes with their labels and status. `cv2.hconcat` joins the re-check crops into one strip, and `cv2.imwrite` saves the evidence photo.
+
 ## Architecture
+
+![Architecture diagram](docs/architecture.png)
 
 ```
 Browser -> FastAPI (uvicorn) on EC2 -> pipeline.py (YOLO + tracking)
@@ -86,6 +97,15 @@ The alert step reads these environment variables:
 | `PUBLIC_BASE_URL` | Public address of the app, used to build evidence links in emails | empty |
 
 The IAM role (or credentials) needs permission to write to the bucket, put items in the table and publish to the topic.
+
+## Testing
+
+To check that the installation works, run the pipeline on a known clip and compare the counts.
+
+1. Download the free Pexels clip "A couple riding a motorbike" (link in the Test footage table below) and, to match the reference run, make a 720p copy of it, for example with ffmpeg: `ffmpeg -i clip.mp4 -vf scale=-2:720 -c:v libx264 -crf 28 -an bare_head_720p.mp4`.
+2. Run `python pipeline.py bare_head_720p.mp4`. This needs no AWS access.
+3. Expected result (the saved reference output is `results/bare_head_perhead.json`): 1 bike tracked, 2 riders tracked, 0 with helmet, 2 without, 0 uncertain, 2 violations (riders `1A` and `1B`, at about 1 s and about 3 s). Counts should match. The exact time at which a violation is confirmed can differ by a fraction of a second between machines.
+4. To test the web app, start it with the `uvicorn` command above, open `http://localhost:8000`, upload the same clip and press **Analyze video**. The page should show the same counts and two evidence photos.
 
 ## Deployment on EC2
 
