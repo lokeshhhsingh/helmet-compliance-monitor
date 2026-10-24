@@ -155,6 +155,11 @@ issue penalties.
 | Bare-headed pair (driver + passenger) | https://www.pexels.com/video/a-couple-riding-a-motorbike-5207050/ | cottonbro studio | 20.4 s |
 | Night rider | https://www.pexels.com/video/nighttime-motorcycle-ride-under-city-overpass-31909050/ | Mario Spencer | 11.8 s |
 | Close-up, bike parked | https://www.pexels.com/video/a-man-riding-a-motorbike-8551058/ | Kindel Media | 9.7 s |
+| Bearded man, front view | https://www.pexels.com/video/a-man-riding-a-big-bike-5198984/ | cottonbro studio | 13 s |
+| Scooter group | https://www.pexels.com/video/group-ride-of-classic-scooters-on-scenic-road-32189923/ | setengah lima sore | 10 s |
+| Scooter with a child in front (vertical video) | https://www.pexels.com/video/father-and-son-scooter-ride-in-indonesia-33635200/ | setengah lima sore | 11 s |
+| Solo rider (62 s) | https://www.pexels.com/video/a-man-riding-a-motorcycle-in-the-neighborhood-4310618/ | K | 62 s |
+| Racing bikes | https://www.pexels.com/@harveyvillarino/ (creator page; exact clip page to be confirmed) | Harvey Tan Villarino | 9 s |
 
 ## Evaluation
 
