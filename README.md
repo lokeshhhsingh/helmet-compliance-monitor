@@ -6,6 +6,8 @@ Built for the OpenCV AI Competition 2026.
 
 **Live demo:** http://43.205.33.42 (kept running during judging, until about November 10, 2026). The page has no login and is meant for short test clips.
 
+**Demo video (4 min):** https://youtu.be/mEgFhqNYVmM
+
 ## What it does
 
 - Detects and tracks motorcycles and people, and treats a person overlapping a motorcycle as a rider.
