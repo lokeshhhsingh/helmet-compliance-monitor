@@ -8,6 +8,8 @@ Built for the OpenCV AI Competition 2026.
 
 **Demo video (4 min):** https://youtu.be/mEgFhqNYVmM
 
+**Technical report (PDF):** [docs/technical_report.pdf](docs/technical_report.pdf)
+
 ## What it does
 
 - Detects and tracks motorcycles and people, and treats a person overlapping a motorcycle as a rider.
