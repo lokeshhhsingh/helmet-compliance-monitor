@@ -192,3 +192,9 @@ Summary: 5 people were clearly bare-headed. The system flagged 4 of them and mis
 - Very dark footage is routed to human review instead of being judged automatically.
 - Tested on a small set of clips (bare-headed pair, night rider, two helmeted riders). It has not been evaluated on a large labelled traffic dataset.
 - At most 3 heads are tracked per bike, and a head partly hidden behind another rider may be missed in frames where it is not visible.
+
+## Credits
+
+- **Helmet dataset.** Roboflow Universe project "helmet_detection" (author: sala), licensed CC BY 4.0, used to train `best.pt`. The page address was not recorded, but the project can be found by name on Roboflow Universe.
+- **Models and libraries.** Ultralytics YOLOv8, PyTorch, OpenCV 5.0.0.93, FastAPI, uvicorn and boto3.
+- **Test footage.** The Pexels creators listed in the Test footage table.
