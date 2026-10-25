@@ -4,6 +4,8 @@ Upload traffic footage and the system tracks every person on a two-wheeler, judg
 
 Built for the OpenCV AI Competition 2026.
 
+**Live demo:** http://43.205.33.42 (kept running during judging, until about November 10, 2026). The page has no login and is meant for short test clips.
+
 ## What it does
 
 - Detects and tracks motorcycles and people, and treats a person overlapping a motorcycle as a rider.
@@ -17,7 +19,7 @@ Built for the OpenCV AI Competition 2026.
 2. A custom model (`best.pt`, classes `helmet` / `no-helmet`) runs on the upper part of each rider's box to find heads.
 3. Each head is tracked over time and collects votes. A head must be detected 8 times before it counts as a person, which blocks one-off phantom detections.
 4. When at least 70% of a head's detection confidence says `no-helmet` and it has been tracked for about a second, the **second look** runs: head crops spaced about 0.2 s apart are enlarged 2x and re-judged. The violation is confirmed only if at least 3 crops were usable and at least 60% agree.
-5. Heads in very dark crops are never confirmed automatically. They go to the review list with the reason "low light".
+5. Heads in very dark crops are never confirmed automatically. They go to the review list with the reason "low light". Every review case is saved to DynamoDB with the status `needs_review` and a reason (`not enough clear views` or `low light`), and it does not send an email: only confirmed violations send alerts.
 
 Result statuses per head: `helmet`, `no-helmet` (confirmed), `uncertain` (leans no-helmet but not confirmed, goes to review) and `checking`.
 
